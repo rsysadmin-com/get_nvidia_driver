@@ -17,14 +17,17 @@
 nvidia_url=https://download.nvidia.com/XFree86/Linux-x86_64     # URL where the drivers are
 nvidia_latest=$nvidia_url/latest.txt                            # file with the latest info
 target_dir=$(pwd)                                               # where to store the downloaded file
-t=30                                                            # time, in seconds, for the countdown function
-
 
  function banner() {
 
     echo -e "\nLinux nVidia Driver Downloader"
     echo "by martin@mielke.com"
     echo -e "==============================\n"
+}
+
+function goodbye() {
+    echo -e "\n=== All set.\n"
+    exit 0
 }
 
 function usage() {  # option: -h
@@ -57,51 +60,15 @@ function get_latest() {
     echo "= Latest version available on nVidia's website: $nvidia_driver_version"
 }
 
-function countdown() {  # yep, a countdown
-    m=${1}-1 # add minus 1 
-
-            floor () {
-                dividend=${1}
-                divisor=${2}
-                result=$(( ( ${dividend} - ( ${dividend} % ${divisor}) )/${divisor} ))
-                echo ${result}
-            }
-
-            timecount(){
-                s=${1}
-                hour=$( floor ${s} 60/60 )
-                s=$((${s}-(60*60*${hour})))
-                min=$( floor ${s} 60 )
-                sec=$((${s}-60*${min}))
-                while [ $hour -ge 0 ]; do
-                    while [ $min -ge 0 ]; do
-                            while [ $sec -ge 0 ]; do
-                                    printf "\t%02d:%02d:%02d\033[0k\r" $hour $min $sec
-                                    sec=$((sec-1))
-                                    sleep 1
-                            done
-                            sec=59
-                            min=$((min-1))
-                    done
-                    min=59
-                    hour=$((hour-1))
-                done
-            }
-
-        timecount $m
-}
-
 
 function download_file() {  # and another helper function
     if [ -r $target_dir/$nvidia_driver_file ]
         then
             echo "= Found local copy of $nvidia_driver_file ..."
             ls -l $target_dir/$nvidia_driver_file
-            echo -e "\nMy job is done...\n"
         else
-            echo -e "= Downloading latest nVidia driver file... \c"
-            wget -q $nvidia_url/$nvidia_driver
-            returnStatus
+            echo -e "= Downloading latest nVidia driver file... \n"
+            curl $nvidia_url/$nvidia_driver -o $target_dir/$nvidia_driver_file
         fi
 }
         
@@ -110,7 +77,6 @@ function download_only() {  # option: -d
     then
         echo "= Found local copy of $nvidia_driver_file ..."
         ls -l $target_dir/$nvidia_driver_file
-        echo -e "\nMy job is done...\n"
     else
         download_file
         echo "= I placed a copy of the downloaded file under $target_dir"
@@ -125,15 +91,18 @@ function download_install() {   # option: -i
  
     download_file
     
-    echo -e "\n= Following is going to happen::\n"
-    echo -e "\t 1) I'll take the system to run-level 3"
+    echo -e "\n= Following needs to happen::\n"
+    echo -e "\t 1) take the system to run-level 3"
     echo -e "\t 2) run the install script I just downloaded\n"
     
-    echo -e "\tYou have $t seconds to hit ctrl-c if you want to stop me..."
+    echo -e "= Let me add execution permissions to $target_dir/$nvidia_driver_file ...\c"
+    chmod +x $target_dir/$nvidia_driver_file
+    returnStatus
     
-    countdown $t    
-    
-    init 3 && $target_dir/$nvidia_driver_file -Xq
+    echo -e "\n= Now, please, run the following commands:"
+    echo -e "\n\tinit 3"
+    echo -e "\n\t$target_dir/$nvidia_driver_file -Xq\n"
+    echo "= After that, you will need to reboot your system."
 
 }
 
@@ -142,7 +111,7 @@ function ru_root() {    # another helper function
     # may be an unnecessary check but, hey! you never know...
     if [[ $UID -ne 0 ]]
     then
-        echo -e "\tWARNING\tNice try! Are you root?..."
+        echo -e "\tWARNING - Nice try! Are you root?..."
         echo -e "\tBecome root and run this script again...\n"
         exit 3
     fi
@@ -166,8 +135,8 @@ for arg in $*
 do
         case $arg in
         -h) usage; exit 1;;
-        -d) get_latest; download_only; exit 0;;
-        -i) ru_root; get_latest; download_install; exit 0;;
+        -d) get_latest; download_only; goodbye; exit 0;;
+        -i) ru_root; get_latest; download_install; goodbye; exit 0;;
         *) usage; exit 0;;
         esac
 done
