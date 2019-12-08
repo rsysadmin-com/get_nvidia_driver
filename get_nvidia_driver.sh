@@ -13,6 +13,18 @@
 # that this little tool may cause.
 #
 
+# First, test if requirements are met
+requirements="wget"
+for r in $requirements
+do
+        which $r > /dev/null
+        if [ -$? -ne 0 ]
+        then
+                echo -e "\nERROR - $r not found. Please install it and try again...\n"
+                exit 1
+        fi 
+done
+
 # some variables
 nvidia_url=https://download.nvidia.com/XFree86/Linux-x86_64     # URL where the drivers are
 nvidia_latest=$nvidia_url/latest.txt                            # file with the latest info
