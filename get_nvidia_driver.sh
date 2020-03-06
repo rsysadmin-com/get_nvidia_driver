@@ -38,6 +38,8 @@ target_dir=$(pwd)                                               # where to store
 }
 
 function goodbye() {
+    echo -e "= Doing some clean up..."
+    rm -f latest.txt
     echo -e "\n=== All set.\n"
     exit 0
 }
@@ -48,6 +50,7 @@ $(basename $0) [-h][-d][-i]
             -h Prints this help
             -d Download only 
             -i (root only) Download and install
+            -c Check latest only (no download, no install)
             
 EOF
 }
@@ -133,7 +136,7 @@ function ru_root() {    # another helper function
 # Main
 #------------------------------------------------------
 
-set -- `getopt hdi $*`
+set -- `getopt hdic $*`
 
 if [[ $? -ne 0 ]]
 then
@@ -149,6 +152,7 @@ do
         -h) usage; exit 1;;
         -d) get_latest; download_only; goodbye; exit 0;;
         -i) ru_root; get_latest; download_install; goodbye; exit 0;;
+        -c) get_latest; goodbye; exit 0;;
         *) usage; exit 0;;
         esac
 done
