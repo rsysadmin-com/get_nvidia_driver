@@ -1,13 +1,13 @@
 # get_nvidia_driver
 ```
-Linux nVidia Driver Downloader<br>
-by martin@mielke.com<br>
-==============================<br>
-<br>
-get_nvidia_driver.sh [-h][-d][-i]<br>
--h Prints this help<br>
--d Download only <br>
--i (root only) Download and install<br>
+Linux nVidia Driver Downloader
+by martin@mielke.com
+==============================
+
+get_nvidia_driver.sh [-h][-d][-i]
+-h Prints this help
+-d Download only
+-i (root only) Download and install
 -c Check latest only (no download, no install)
 ``` 
 For the -i option, it is advised to run this as root on runlevel 3.<br>
