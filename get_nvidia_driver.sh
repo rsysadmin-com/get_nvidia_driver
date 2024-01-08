@@ -2,7 +2,7 @@
 
 #
 # get_nvidia_driver.sh
-# by martin@mielke.com
+# by martinm@rsysadmin.com
 #
 # quick and dirty script to fetch nVidia's latest driver for Linux.
 #
@@ -31,14 +31,19 @@ nvidia_latest=$nvidia_url/latest.txt                            # file with the 
 target_dir=$(pwd)                                               # where to store the downloaded file
 
  function banner() {
+cat <<BANNER
 
-    echo -e "\nLinux nVidia Driver Downloader"
-    echo "by martin@mielke.com"
-    echo -e "==============================\n"
+Linux nVidia Driver Downloader and Installer
+
+by martinm@rsysadmin.com
+============================================
+
+BANNER
+
 }
 
 function goodbye() {
-    echo -e "= Doing some clean up..."
+    echo -e "--> Doing some clean up..."
     rm -f latest.txt
     echo -e "\n=== All set.\n"
     exit 0
@@ -66,36 +71,36 @@ function returnStatus { # helper funcion
 
 function get_latest() {
     # get latest version
-    echo -e "= Fetching latest nVidia driver version... \c"
+    echo -e "--> Fetching latest nVidia driver version... \c"
     wget -q $nvidia_latest -O latest.txt
     returnStatus
     nvidia_driver=$(awk '{ print $2 }' latest.txt)
     nvidia_driver_version=$(awk '{ print $1 }' latest.txt)
     nvidia_driver_file=$(awk -F/ '{ print $2 }' latest.txt)
-    echo "= Latest version available on nVidia's website: $nvidia_driver_version"
+    echo "--> Latest version available on nVidia's website: $nvidia_driver_version"
 }
 
 
 function download_file() {  # and another helper function
     if [ -r $target_dir/$nvidia_driver_file ]
         then
-            echo "= Found local copy of $nvidia_driver_file ..."
+            echo "--> Found local copy of $nvidia_driver_file ..."
             ls -l $target_dir/$nvidia_driver_file
         else
-            echo -e "= Downloading latest nVidia driver file... \n"
-            curl $nvidia_url/$nvidia_driver -o $target_dir/$nvidia_driver_file
+            echo -e "--> Downloading latest nVidia driver file... \n"
+            wget $nvidia_url/$nvidia_driver -O $target_dir/$nvidia_driver_file
         fi
 }
         
 function download_only() {  # option: -d
     if [ -r $target_dir/$nvidia_driver_file ]
     then
-        echo "= Found local copy of $nvidia_driver_file ..."
+        echo "--> Found local copy of $nvidia_driver_file ..."
         ls -l $target_dir/$nvidia_driver_file
     else
         download_file
-        echo "= I placed a copy of the downloaded file under $target_dir"
-        echo "= and also added execution permissions to it..."
+        echo "--> I placed a copy of the downloaded file under $target_dir"
+        echo "--> and also added execution permissions to it..."
         chmod +x $target_dir/$nvidia_driver_file
         ls -l $target_dir/$nvidia_driver_file
     fi
@@ -110,14 +115,14 @@ function download_install() {   # option: -i
     echo -e "\t 1) take the system to run-level 3"
     echo -e "\t 2) run the install script I just downloaded\n"
     
-    echo -e "= Let me add execution permissions to $target_dir/$nvidia_driver_file ...\c"
+    echo -e "--> Let me add execution permissions to $target_dir/$nvidia_driver_file ...\c"
     chmod +x $target_dir/$nvidia_driver_file
     returnStatus
     
     echo -e "\n= Now, please, run the following commands:"
     echo -e "\n\tinit 3"
     echo -e "\n\t$target_dir/$nvidia_driver_file -Xq\n"
-    echo "= After that, you will need to reboot your system."
+    echo "--> After that, you will need to reboot your system."
 
 }
 
