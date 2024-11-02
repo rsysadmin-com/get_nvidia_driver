@@ -13,33 +13,21 @@
 # that this little tool may cause.
 #
 
-# First, test if requirements are met
-requirements="wget"
-for r in $requirements
-do
-        which $r > /dev/null
-        if [ -$? -ne 0 ]
-        then
-                echo -e "\nERROR - $r not found. Please install it and try again...\n"
-                exit 1
-        fi 
-done
+# Variables
+nvidia_url="https://download.nvidia.com/XFree86/Linux-x86_64"
+nvidia_latest="$nvidia_url/latest.txt"
+target_dir=$(pwd)
+version=""
 
-# some variables
-nvidia_url=https://download.nvidia.com/XFree86/Linux-x86_64     # URL where the drivers are
-nvidia_latest=$nvidia_url/latest.txt                            # file with the latest info
-target_dir=$(pwd)                                               # where to store the downloaded file
-
- function banner() {
-cat <<BANNER
-
+# Functions
+function banner() {
+    cat <<BANNER
 Linux nVidia Driver Downloader and Installer
 
 by martinm@rsysadmin.com
 ============================================
 
 BANNER
-
 }
 
 function goodbye() {
@@ -49,119 +37,108 @@ function goodbye() {
     exit 0
 }
 
-function usage() {  # option: -h
+function usage() {
     cat << EOF
-$(basename $0) [-h][-d][-i]
-            -h Prints this help
-            -d Download only 
-            -i (root only) Download and install
-            -c Check latest only (no download, no install)
-            
+Usage: $(basename $0) [-h] [-d [version]] [-i [version]] [-c]
+Options:
+    -h                  Prints this help
+    -d [version]        Download only; specify version optionally (e.g., 565.57.01)
+    -i [version]        Download and install; specify version optionally (requires root)
+    -c                  Check latest stable version only
 EOF
 }
 
-function returnStatus { # helper funcion
-    if [[ $? -eq 0 ]]
-    then
-        echo -e "[ PASS ]"
-    else
-        echo -e "[ FAIL ]"
-    fi
+function returnStatus() {
+    [[ $? -eq 0 ]] && echo -e "[ PASS ]" || echo -e "[ FAIL ]"
 }
 
 function get_latest() {
-    # get latest version
-    echo -e "--> Fetching latest nVidia driver version... \c"
-    wget -q $nvidia_latest -O latest.txt
+    echo -e "--> Fetching latest stable nVidia driver version... \c"
+    wget -q "$nvidia_latest" -O latest.txt
     returnStatus
-    nvidia_driver=$(awk '{ print $2 }' latest.txt)
     nvidia_driver_version=$(awk '{ print $1 }' latest.txt)
-    nvidia_driver_file=$(awk -F/ '{ print $2 }' latest.txt)
-    echo "--> Latest version available on nVidia's website: $nvidia_driver_version"
+    nvidia_driver_file=$(awk '{ print $2 }' latest.txt | awk -F/ '{ print $2 }')
+    echo "--> Latest stable version available on nVidia's website: $nvidia_driver_version"
 }
 
-
-function download_file() {  # and another helper function
-    if [ -r $target_dir/$nvidia_driver_file ]
-        then
-            echo "--> Found local copy of $nvidia_driver_file ..."
-            ls -l $target_dir/$nvidia_driver_file
-        else
-            echo -e "--> Downloading latest nVidia driver file... \n"
-            wget $nvidia_url/$nvidia_driver -O $target_dir/$nvidia_driver_file
-        fi
-}
-        
-function download_only() {  # option: -d
-    if [ -r $target_dir/$nvidia_driver_file ]
-    then
-        echo "--> Found local copy of $nvidia_driver_file ..."
-        ls -l $target_dir/$nvidia_driver_file
+function download_file() {
+    local driver_version="${version:-$nvidia_driver_version}"  # Use specified version or fallback to latest
+    local file="NVIDIA-Linux-x86_64-$driver_version.run"
+    
+    if [ -r "$target_dir/$file" ]; then
+        echo "--> Found local copy of $file ..."
+        ls -l "$target_dir/$file"
     else
-        download_file
-        echo "--> I placed a copy of the downloaded file under $target_dir"
-        echo "--> and also added execution permissions to it..."
-        chmod +x $target_dir/$nvidia_driver_file
-        ls -l $target_dir/$nvidia_driver_file
+        echo -e "--> Downloading nVidia driver version $driver_version...\n"
+        wget -q "$nvidia_url/$driver_version/$file" -O "$target_dir/$file"
+        chmod +x "$target_dir/$file"
+        echo "--> Downloaded and set execution permissions for $file"
+        ls -l "$target_dir/$file"
     fi
-
 }
 
-function download_install() {   # option: -i
- 
+function download_only() {
     download_file
-    
-    echo -e "\n= Following needs to happen::\n"
-    echo -e "\t 1) take the system to run-level 3"
-    echo -e "\t 2) run the install script I just downloaded\n"
-    
-    echo -e "--> Let me add execution permissions to $target_dir/$nvidia_driver_file ...\c"
-    chmod +x $target_dir/$nvidia_driver_file
-    returnStatus
-    
-    echo -e "\n= Now, please, run the following commands:"
-    echo -e "\n\tinit 3"
-    echo -e "\n\t$target_dir/$nvidia_driver_file -Xq\n"
-    echo "--> After that, you will need to reboot your system."
-
 }
 
-function ru_root() {    # another helper function
-    # check if we are root.. if not, stop right here, right now.
-    # may be an unnecessary check but, hey! you never know...
-    if [[ $UID -ne 0 ]]
-    then
-        echo -e "\tWARNING - Nice try! Are you root?..."
-        echo -e "\tBecome root and run this script again...\n"
+function download_install() {
+    download_file
+    echo -e "\n= Following steps to install:\n"
+    echo -e "\t1) Switch to runlevel 3"
+    echo -e "\t2) Run the installer\n"
+    echo -e "--> Commands:"
+    echo -e "\n\tinit 3"
+    echo -e "\n\t$target_dir/NVIDIA-Linux-x86_64-$version.run -Xq\n"
+    echo "--> Reboot after installation."
+}
+
+function ru_root() {
+    if [[ $UID -ne 0 ]]; then
+        echo -e "WARNING - You need to be root to install."
         exit 3
     fi
 }
 
-#------------------------------------------------------
 # Main
-#------------------------------------------------------
-
-set -- `getopt hdic $*`
-
-if [[ $? -ne 0 ]]
-then
-        usage
-        exit
-fi
+mode=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h) usage; exit 0;;
+        -d)
+            mode="download"
+            # Check if the next argument is a version number (i.e., matches n.n.n pattern)
+            if [[ $2 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                version="$2"
+                shift
+            fi
+            ;;
+        -i)
+            mode="install"
+            if [[ $2 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                version="$2"
+                shift
+            fi
+            ;;
+        -c) mode="check";;
+        *) usage; exit 1;;
+    esac
+    shift
+done
 
 banner
 
-for arg in $*
-do
-        case $arg in
-        -h) usage; exit 1;;
-        -d) get_latest; download_only; goodbye; exit 0;;
-        -i) ru_root; get_latest; download_install; goodbye; exit 0;;
-        -c) get_latest; goodbye; exit 0;;
-        *) usage; exit 0;;
-        esac
-done
+# Fetch the latest version if no version is specified and mode is not "check"
+if [[ -z "$version" && "$mode" != "check" ]]; then
+    get_latest
+    version="$nvidia_driver_version"
+fi
 
-# The end.
+# Execute based on mode
+case $mode in
+    "download") download_only ;;
+    "install") ru_root; download_install ;;
+    "check") get_latest; goodbye ;;
+    *) usage; exit 1 ;;
+esac
 
-
+goodbye
