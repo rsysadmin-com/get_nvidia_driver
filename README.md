@@ -4,13 +4,33 @@ Linux nVidia Driver Downloader and Installer
 ## Usage
 
 ```
-get_nvidia_driver.sh [-h][-d][-i]
--h Prints this help
--d Download only 
--i (root only) Download and install
--c Check latest only (no download, no install)
+$ ./get_nvidia_driver.sh -h
+Usage: get_nvidia_driver.sh [-h] [-d [version]] [-i [version]] [-c]
+Options:
+    -h                  Prints this help
+    -d [version]        Download only; specify version optionally (e.g., 565.57.01)
+    -i [version]        Download and install; specify version optionally (requires root)
+    -c                  Check latest stable version only
 ```
 For the `-i` option, it is advised to run this script as `root` from `runlevel 3`.
+
+Both `-d` and `-i` options now accept an optional version argument.
+
+If no version is specified, the script will default to downloading the version listed in `latest.txt`. If a version is provided, the script will download that specific version.
+
+Examples:
+
+- Download the latest version (from `latest.txt`):
+
+    `./get_nvidia_driver.sh -d`
+
+    This will download version `550.127.05` (the latest stable version as of this writing).
+
+- Download a specific version:
+
+    `./get_nvidia_driver.sh -d 565.57.01`
+
+    This will download version `565.57.01`.
 
 
 ## Dependencies
