@@ -11,7 +11,7 @@ Options:
     -d [version]        Download only; specify version optionally (e.g., 565.57.01)
     -i [version]        Download and install; specify version optionally (requires root)
     -l [n]              List the last n versions available; defaults to last 5 if n is not specified
-    -c                  Check latest stable version onlyCheck latest stable version only
+    -c                  Check latest stable version only
 ```
 For the `-i` option, it is advised to run this script as `root` from `runlevel 3`.
 
