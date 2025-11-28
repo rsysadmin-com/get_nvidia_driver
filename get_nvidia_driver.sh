@@ -89,7 +89,7 @@ function download_file() {
         ls -l "$target_dir/$file"
     else
         echo -e "--> Downloading nVidia driver version $driver_version...\n"
-        wget -q "$nvidia_url/$driver_version/$file" -O "$target_dir/$file"
+        wget -c "$nvidia_url/$driver_version/$file" -O "$target_dir/$file"
         chmod +x "$target_dir/$file"
         echo "--> Downloaded and set execution permissions for $file"
         ls -l "$target_dir/$file"
